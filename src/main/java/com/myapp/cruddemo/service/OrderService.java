@@ -1,15 +1,17 @@
 package com.myapp.cruddemo.service;
 
 import com.myapp.cruddemo.dao.OrderRepository;
+import com.myapp.cruddemo.dao.UserRepository;
 import com.myapp.cruddemo.entity.Cart;
 import com.myapp.cruddemo.entity.CartItem;
 import com.myapp.cruddemo.entity.Order;
 import com.myapp.cruddemo.entity.OrderItem;
 import com.myapp.cruddemo.entity.User;
 import com.myapp.cruddemo.entity.Product;
-
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import com.myapp.cruddemo.exception.BadRequestException;
 import com.myapp.cruddemo.exception.ResourceNotFoundException;
 
@@ -20,11 +22,28 @@ import java.util.List;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final UserRepository userRepository;
 
-    public OrderService(OrderRepository orderRepository){
+    public OrderService(OrderRepository orderRepository,UserRepository userRepository){
         this.orderRepository=orderRepository;
+        this.userRepository = userRepository;
     }
 
+    
+    public List<Order> getOrders(Authentication authentication){
+        User user = userRepository.findByEmail(authentication.getName()).orElseThrow(()-> new ResourceNotFoundException("User not found") );
+
+        User.Role role = user.getRole();
+        if (role == User.Role.ADMIN){
+            return getAllOrders();
+        }
+        else if(role == User.Role.CUSTOMER){
+            return getUserOrders(user.getId());
+        }
+        else {
+            throw new BadRequestException("Invalid user role");
+        }
+    }
     public List<Order> getAllOrders(){ //for ADMIN
         return orderRepository.findAll();
     }
@@ -36,8 +55,9 @@ public class OrderService {
     
 
     @Transactional
-    public Order placeOrder(User user){
-        
+    public Order placeOrder(Authentication authentication){
+        User user = userRepository.findByEmail(authentication.getName()).orElseThrow(()-> new ResourceNotFoundException("user not found"));
+
         Cart cart = user.getCart();
         if (cart == null) {
             throw new ResourceNotFoundException("User does not have a cart");

@@ -2,50 +2,54 @@ package com.myapp.cruddemo.service;
 
 import com.myapp.cruddemo.dao.CartRepository;
 import com.myapp.cruddemo.dao.ProductRepository;
+import com.myapp.cruddemo.dao.UserRepository;
+
 import com.myapp.cruddemo.entity.Cart;
 import com.myapp.cruddemo.entity.CartItem;
 import com.myapp.cruddemo.entity.Product;
+import com.myapp.cruddemo.entity.User;
+
 import com.myapp.cruddemo.exception.BadRequestException;
 import com.myapp.cruddemo.exception.ResourceNotFoundException;
 
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.Authentication;
 
-import java.util.List;
+
 import java.util.Iterator;
 @Service
 public class CartService {
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
+    private final UserRepository userRepository;
 
-    public CartService(CartRepository cartRepository, ProductRepository productRepository) {
+    public CartService(CartRepository cartRepository, ProductRepository productRepository, UserRepository userRepository) {
         this.cartRepository = cartRepository;
         this.productRepository = productRepository;
+        this.userRepository = userRepository;
+
     }
 
     public Cart getCart(int cartId){
         return cartRepository.findById(cartId).orElseThrow(()-> new ResourceNotFoundException("No Cart Found with Id:" + cartId));
     }
     @Transactional(readOnly = true)
-    public Cart getCartByUserId(int userId){
-
-        return cartRepository.findByUserId(userId).orElseThrow(()-> new ResourceNotFoundException("No Cart Found for Costumer with Id:" + userId));
+    public Cart getCartByUserId(Authentication authentication){
+        User user = userRepository.findByEmail( authentication.getName()).orElseThrow(
+                                () -> new ResourceNotFoundException("User not found"));
+                                
+        return cartRepository.findByUserId(user.getId()).orElseThrow(()-> new ResourceNotFoundException("No Cart Found for Costumer with Id:" + user.getId()));
     }
     
-    //post
-    public Cart updateCart(int userId, List<CartItem> newCartItems){
-
-        Cart existingCart = getCartByUserId(userId);
-        existingCart.setCartItems(newCartItems);
-        
-        return cartRepository.save(existingCart);
-    }
     //put
-    public Cart addToCart(int userId, int productId, int quantity){
+    public Cart addToCart(Authentication authentication, int productId, int quantity){
         if (quantity <= 0) {
             throw new BadRequestException("Quantity must be greater than 0");
         }
-        Cart cart = getCartByUserId(userId);
+        User user = userRepository.findByEmail( authentication.getName()).orElseThrow(
+                                () -> new ResourceNotFoundException("User not found"));
+        Cart cart = getCartByUserId(authentication);
 
         Product product = productRepository.findById(productId).orElseThrow(() ->
                 new ResourceNotFoundException("Product not found with Id: " + productId));
@@ -71,16 +75,17 @@ public class CartService {
             
             cart.addCartItem(cartItem);
             return cartRepository.save(cart);
-       
-
     }
     
-    public Cart removeFromCart(int userId, int productId, int quantity){
+    public Cart removeFromCart(Authentication authentication, int productId, int quantity){
 
         if (quantity<= 0){
             throw new BadRequestException("Quantity must be greater than 0");
         }
-        Cart cart = getCartByUserId(userId);
+        User user = userRepository.findByEmail( authentication.getName()).orElseThrow(
+                                () -> new ResourceNotFoundException("User not found"));
+
+        Cart cart = getCartByUserId(authentication);
         Iterator<CartItem> iterator = cart.getCartItems().iterator();
 
         while (iterator.hasNext() ){
@@ -100,12 +105,12 @@ public class CartService {
     }
 
 
-    public void deleteCart(int userId) {
-        Cart cart = getCartByUserId(userId);
+    public void deleteCart(Authentication authentication) {
+        Cart cart = getCartByUserId(authentication);
         cartRepository.delete(cart);
     }
-    public Cart clearCart(int userId){
-        Cart existingCart = getCartByUserId(userId);
+    public Cart clearCart(Authentication authentication){
+        Cart existingCart = getCartByUserId(authentication);
         existingCart.getCartItems().clear();
         return cartRepository.save(existingCart);
     }

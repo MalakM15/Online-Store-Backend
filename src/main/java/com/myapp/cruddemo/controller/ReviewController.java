@@ -3,8 +3,7 @@ package com.myapp.cruddemo.controller;
 import com.myapp.cruddemo.entity.Review;
 import com.myapp.cruddemo.service.ReviewService;
 
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 

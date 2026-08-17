@@ -1,10 +1,6 @@
 package com.myapp.cruddemo.controller;
-import com.myapp.cruddemo.exception.ResourceNotFoundException;
 import com.myapp.cruddemo.service.OrderService;
-import com.myapp.cruddemo.dao.UserRepository;
 import com.myapp.cruddemo.entity.Order;
-import com.myapp.cruddemo.entity.User;
-import com.myapp.cruddemo.entity.User.Role;
 
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,8 +8,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.myapp.cruddemo.exception.BadRequestException;
-import com.myapp.cruddemo.exception.ResourceNotFoundException;
 import java.util.List;
 
 @RestController
@@ -21,34 +15,22 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
-    private final UserRepository userRepository;
 
-    public OrderController(OrderService orderService,UserRepository userRepository){
+    public OrderController(OrderService orderService){
         this.orderService = orderService;
-        this.userRepository = userRepository;
+       
 
     }
 
     @GetMapping
     public List<Order> getOrders(Authentication authentication){
-        User user = userRepository.findByEmail(authentication.getName()).orElseThrow(()-> new ResourceNotFoundException("User not found") );
 
-        Role role = user.getRole();
-        if (role == User.Role.ADMIN){
-            return orderService.getAllOrders();
-        }
-        else if(role == User.Role.CUSTOMER){
-            return orderService.getUserOrders(user.getId());
-        }
-        else {
-            throw new BadRequestException("Invalid user role");
-        }
+        return orderService.getOrders(authentication);
     }
     @PostMapping
 
     public Order placeOrder (Authentication authentication){
-        User user = userRepository.findByEmail(authentication.getName()).orElseThrow(()-> new ResourceNotFoundException("user not found"));
-        return orderService.placeOrder(user);
+        return orderService.placeOrder(authentication);
 
     }
 
