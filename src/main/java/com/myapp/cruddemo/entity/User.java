@@ -43,9 +43,11 @@ public class User {
                 mappedBy = "user" )
     @JsonIgnore
     private List<Order> orders;
+    @JsonIgnore  
     @OneToMany(fetch = FetchType.LAZY , cascade = {CascadeType.PERSIST, CascadeType.MERGE, 
                                 CascadeType.DETACH, CascadeType.REFRESH},
                 mappedBy = "user" )
+      
     private List<Review> reviews;
     @JsonIgnore
     @OneToOne(mappedBy = "user", fetch = FetchType.LAZY , cascade = CascadeType.ALL)
@@ -107,11 +109,11 @@ public class User {
         this.orders = orders;
     }
 
-    public List<Review> getReview() {
+    public List<Review> getReviews() {
         return reviews;
     }
-    public void setReview(List<Review> review) {
-        this.reviews = review;
+    public void setReviews(List<Review> reviews) {
+        this.reviews = reviews;
     }
 
     public Cart getCart() { 

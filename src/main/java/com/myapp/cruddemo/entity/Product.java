@@ -42,6 +42,7 @@ public class Product {
     private List<OrderItem> orderItems;
     
     @OneToMany(mappedBy = "product", fetch = FetchType.LAZY)
+    @JsonIgnore
     private List<Review> reviews;
 
     public Product(){
