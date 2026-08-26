@@ -87,7 +87,7 @@ public class OrderService {
             orderItem.setQuantity(quantity);
             order.addOrderItem(orderItem);
 
-            totalPrice = product.getPrice() * quantity;
+            totalPrice += product.getPrice() * quantity;
             product.setStock(product.getStock() - quantity);
 
         }
