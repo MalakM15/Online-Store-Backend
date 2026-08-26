@@ -43,6 +43,7 @@ public class CartService {
     }
     
     //put
+    @Transactional
     public Cart addToCart(Authentication authentication, int productId, int quantity){
         if (quantity <= 0) {
             throw new BadRequestException("Quantity must be greater than 0");
@@ -76,7 +77,7 @@ public class CartService {
             cart.addCartItem(cartItem);
             return cartRepository.save(cart);
     }
-    
+    @Transactional
     public Cart removeFromCart(Authentication authentication, int productId, int quantity){
 
         if (quantity<= 0){
@@ -104,11 +105,12 @@ public class CartService {
         throw new ResourceNotFoundException("Product is not in the cart");
     }
 
-
+    @Transactional
     public void deleteCart(Authentication authentication) {
         Cart cart = getCartByUserId(authentication);
         cartRepository.delete(cart);
     }
+    @Transactional
     public Cart clearCart(Authentication authentication){
         Cart existingCart = getCartByUserId(authentication);
         existingCart.getCartItems().clear();
