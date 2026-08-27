@@ -1,6 +1,7 @@
 package com.myapp.cruddemo.service;
 
 import com.myapp.cruddemo.dao.OrderRepository;
+import com.myapp.cruddemo.dao.ProductRepository;
 import com.myapp.cruddemo.dao.UserRepository;
 import com.myapp.cruddemo.entity.Cart;
 import com.myapp.cruddemo.entity.CartItem;
@@ -18,15 +19,18 @@ import com.myapp.cruddemo.exception.ResourceNotFoundException;
 import java.time.LocalDate;
 import java.util.List;
 
+
 @Service
 public class OrderService {
 
     private final OrderRepository orderRepository;
     private final UserRepository userRepository;
+    private final ProductRepository productRepository;
 
-    public OrderService(OrderRepository orderRepository,UserRepository userRepository){
+    public OrderService(OrderRepository orderRepository,UserRepository userRepository, ProductRepository productRepository){
         this.orderRepository=orderRepository;
         this.userRepository = userRepository;
+        this.productRepository = productRepository;
     }
 
     
@@ -73,6 +77,7 @@ public class OrderService {
                 throw new BadRequestException("not enough stock for : "+ product.getName());
             }
         }
+    
         Order order = new Order();
         order.setUser(user);
         order.setOrderDate(LocalDate.now());
@@ -87,14 +92,20 @@ public class OrderService {
             orderItem.setQuantity(quantity);
             order.addOrderItem(orderItem);
 
-            totalPrice = product.getPrice() * quantity;
-            product.setStock(product.getStock() - quantity);
+            totalPrice += product.getPrice() * quantity;
+            int updatedRows = productRepository.decreaseStockIfAvailable(product.getId(),quantity);
+
+            if (updatedRows == 0) {
+                throw new BadRequestException("Not enough stock for: " + product.getName());
+            }
 
         }
         order.setTotalPrice(totalPrice);
         cart.getCartItems().clear();
+        Order savedOrder = orderRepository.save(order);
 
-        return orderRepository.save(order);
+
+        return savedOrder;
             
         }
     }
